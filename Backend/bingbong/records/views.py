@@ -14,8 +14,8 @@ class RecordView(APIView):
     month = request.GET.get('month')
     day = request.GET.get('day')
 
-    record = Record.objects.filter(user=request.user, year=year, month=month)
-    serializer = RecordSerializer(record, many=True)
+    record = get_object_or_404(Record, user=request.user, year=year, month=month)
+    serializer = RecordSerializer(record, many=False)
     return Response(serializer.data, status=status.HTTP_200_OK)
   
   def post(self, request):
@@ -43,8 +43,21 @@ class RecordView(APIView):
       year = request.GET.get('year')
       month = request.GET.get('month')
       day = request.GET.get('day')
-      record = Record.objects.filter(user=request.user, year=year, month=month)
-      serializer = RecordSerializer(record, many=True)
+      record = get_object_or_404(Record, user=request.user, year=year, month=month)
+      serializer = RecordSerializer(record, many=False)
       return Response(serializer.data, status=status.HTTP_200_OK)
     else:
       return Response({"message": "수정 권한이 없습니다."})
+  
+  def delete(self, request):
+    if not request.user.is_authenticated:
+      return Response({"message": "수정 권한이 없습니다."})
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    day = request.GET.get('day')
+    record = get_object_or_404(Record, user=request.user, year=year, month=month)
+    if request.user == record.user:
+      record.delete()
+      return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+    else:
+      return Response({"message": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
