@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token 
 from rest_framework.validators import UniqueValidator
+from .models import Mypage
 
 #회원가입 시리얼라이저
 class SignupSerializer(serializers.ModelSerializer):
@@ -57,3 +58,7 @@ class LoginSerializer(serializers.Serializer):
             {"error": "일치하는 회원 정보가 없습니다."}
         )
     
+class MypageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mypage
+        fields = ("nickname", "image")
