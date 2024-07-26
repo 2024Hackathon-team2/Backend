@@ -42,6 +42,7 @@ class GoalView(APIView):
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
     serializer = GoalSerializer(goal)
     goal = serializer.data
+    user = goal['user']
     soju_goal = Decimal(goal['soju_goal'])
     beer_goal = Decimal(goal['beer_goal'])
     mak_goal = Decimal(goal['mak_goal'])
@@ -84,13 +85,20 @@ class GoalView(APIView):
 
     # 남은 잔수의 합
     remainder = Decimal(total_goal) - total_record
+    if total_goal == 0:
+      percentage = 0
+    else:
+      percentage = total_record/total_goal * 100
 
     data ={
+      "user": user,
       "goal": goal,
       "record": {
         "date": date,
         "record_alcohol": record
       },
+      "percentage":percentage
+      ,
       "remainder": remainder
     }
 
@@ -111,6 +119,7 @@ class GoalView(APIView):
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
     serializer = GoalSerializer(goal)
     goal = serializer.data
+    user = goal['user']
     soju_goal = Decimal(goal['soju_goal'])
     beer_goal = Decimal(goal['beer_goal'])
     mak_goal = Decimal(goal['mak_goal'])
@@ -151,13 +160,19 @@ class GoalView(APIView):
 
       # 남은 잔수의 합
     remainder = Decimal(total_goal) - total_record
-
+    if total_goal == 0:
+      percentage = 0
+    else:
+      percentage = total_record/total_goal * 100
     data ={
+      "user": user,
     "goal": goal,
     "record": {
       "date": date,
       "record_alcohol": record
     },
+    "percentage":percentage
+      ,
       "remainder": remainder
     }
     return Response(data, status=status.HTTP_200_OK)
@@ -181,6 +196,7 @@ class GoalView(APIView):
       goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
       serializer = GoalSerializer(goal)
       goal = serializer.data
+      user = goal['user']
       soju_goal = Decimal(goal['soju_goal'])
       beer_goal = Decimal(goal['beer_goal'])
       mak_goal = Decimal(goal['mak_goal'])
@@ -222,13 +238,19 @@ class GoalView(APIView):
 
       # 남은 잔수의 합
       remainder = Decimal(total_goal) - total_record
-
+      if total_goal == 0:
+        percentage = 0
+      else:
+        percentage = total_record/total_goal * 100
       data ={
+      "user": user,
       "goal": goal,
       "record": {
         "date": date,
         "record_alcohol": record
       },
+      "percentage":percentage
+      ,
         "remainder": remainder
       }
       return Response(data, status=status.HTTP_200_OK)
@@ -242,7 +264,7 @@ class GoalView(APIView):
     user = request.user
 
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
-    if request.uesr == goal.user:
+    if request.user == goal.user:
       goal.delete()
       return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
     else:
@@ -250,5 +272,71 @@ class GoalView(APIView):
 
 class SocialView(APIView):
   def get(self, request):
+    now   = datetime.now()
+    year  = now.year
+    month = now.month
+    day   = now.day
 
+    #목표
+    goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
+    goal_serializer = GoalSerializer(goal)
+    goal_data = goal_serializer.data
+    
+    #응원
+    cheer = goal_data['cheer']
+    #사용자 설정 목표
+    soju_goal = Decimal(goal_data['soju_goal'])
+    beer_goal = Decimal(goal_data['beer_goal'])
+    mak_goal  = Decimal(goal_data['mak_goal'])
+    wine_goal = Decimal(goal_data['wine_goal'])
+
+    #기록
+    records = Record.objects.filter(user=request.user, year=year, month=month)
+    soju_record = 0.0
+    beer_record = 0.0
+    mak_record  = 0.0
+    wine_record = 0.0
+
+    for record in records:
+      soju_record += record.soju_record
+      beer_record += record.beer_record
+      mak_record  += record.mak_record
+      wine_record += record.wine_record
+    
+    #목표 달성율
+    soju = {
+      "goal"        : soju_goal,
+      "record"      : soju_record,
+      "percentage"  : soju_record/soju_goal if soju_goal != 0 else 0
+    }
+
+    beer = {
+      "goal"        : beer_goal,
+      "record"      : beer_record,
+      "percentage"  : beer_record/beer_goal if beer_goal != 0 else 0
+    }
+
+    mak = {
+      "goal"        : mak_goal,
+      "record"      : mak_record,
+      "percentage"  : mak_record/mak_goal if mak_goal != 0 else 0
+    }
+
+    wine = {
+      "goal"        : wine_goal,
+      "record"      : wine_record,
+      "percentage"  : wine_record/wine_goal if wine_goal != 0 else 0
+    }
+
+    #친구의 달성률
+
+
+    data = {
+      "cheer"   : cheer,
+      "soju"    : soju,
+      "beer"    : beer,
+      "mak"     : mak,
+      "wine"    : wine
+      #"friends" : 
+    }
     return Response()
