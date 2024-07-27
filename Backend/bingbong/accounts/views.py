@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import SignupSerializer, LoginSerializer, MypageSerializer
+from .serializers import SignupSerializer, LoginSerializer, MypageSerializer, ChangePasswordSerializer 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
@@ -57,3 +57,12 @@ class AddFriendView(APIView):
         except Mypage.DoesNotExist:
             return Response({"detail":"사용자를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "비밀번호가 변경되었습니다."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
