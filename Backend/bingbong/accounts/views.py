@@ -38,3 +38,22 @@ class MypageView(generics.RetrieveUpdateAPIView):
     queryset = Mypage.objects.all()
     serializer_class = MypageSerializer
     permission_classes = [CustomReadOnly]
+
+class AddFriendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        try: 
+            user_profile = Mypage.objects.get(user=request.user)
+            friend_profile=Mypage.objects.get(user__id=user_id)
+
+            if friend_profile in user_profile.friends.all():
+                return Response({"detail": "이미 친구입니다."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user_profile.friends.add(friend_profile)
+            user_profile.save()
+            return Response({"detail" : "친구 추가 완료"}, status=status.HTTP_200_OK)
+        
+        except Mypage.DoesNotExist:
+            return Response({"detail":"사용자를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+

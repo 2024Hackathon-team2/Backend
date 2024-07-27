@@ -58,4 +58,4 @@ class LoginSerializer(serializers.Serializer):
 class MypageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mypage
-        fields = ("nickname", "image")
+        fields = ("nickname", "image", "friends")

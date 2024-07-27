@@ -8,6 +8,7 @@ class Mypage(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     nickname = models.CharField(max_length=20, blank=True)
     image = models.ImageField(upload_to='mypage/', default='default.png')
+    friends = models.ManyToManyField('self', symmetrical=False, blank=True, related_name='friends_with')
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
