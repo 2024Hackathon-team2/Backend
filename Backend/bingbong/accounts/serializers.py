@@ -1,12 +1,13 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model, authenticate
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token 
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueValidator
 from .models import Mypage
 
+
 User = get_user_model()
+
 # 회원가입 시리얼라이저
 class SignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -22,28 +23,27 @@ class SignupSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True,
     )
-    
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'password2')  # 'username' 필드를 제외
+        fields = ('email', 'password', 'password2')
 
     def validate(self, data):
         if data['password'] != data['password2']:
             raise serializers.ValidationError(
                 {"password": "비밀번호가 일치하지 않습니다."}
-        )
+            )
         return data
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['email'],  # 이메일을 'username'으로 사용
+            username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
         )
-        Token.objects.create(user=user)  # 토큰 생성
         return user
-    
+
+# 로그인 시리얼라이저
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, write_only=True)
@@ -51,19 +51,24 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(username=data['email'], password=data['password'])
         if user:
-            token = Token.objects.get(user=user)
-            return token
+            refresh = RefreshToken.for_user(user)
+            return {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
         raise serializers.ValidationError(
             {"error": "일치하는 회원 정보가 없습니다."}
         )
-    
+
+# 마이페이지 시리얼라이저
 class MypageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mypage
         fields = ("nickname", "image", "friends")
 
+# 비밀번호 변경 시리얼라이저
 class ChangePasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(required=True, write_only = True, validators=[validate_password])
+    new_password = serializers.CharField(required=True, write_only=True, validators=[validate_password])
     new_password2 = serializers.CharField(required=True, write_only=True)
 
     def validate(self, data):
