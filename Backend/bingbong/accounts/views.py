@@ -47,10 +47,6 @@ class AddFriendView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, user_id):
-        # JWT 인증 확인
-        if not request.user.is_authenticated:
-            raise AuthenticationFailed("User is not authenticated")
-
         try:
             user_profile = Mypage.objects.get(user=request.user)
             friend_profile = Mypage.objects.get(user__id=user_id)
