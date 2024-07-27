@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.validators import UniqueValidator
 from .models import Mypage
 
-#회원가입 시리얼라이저
+# 회원가입 시리얼라이저
 class SignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
@@ -24,7 +24,7 @@ class SignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2')
+        fields = ('email', 'password', 'password2')  # 'username' 필드를 제외
 
     def validate(self, data):
         if data['password'] != data['password2']:
@@ -35,26 +35,23 @@ class SignupSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['username'],
+            username=validated_data['email'],  # 이메일을 'username'으로 사용
             email=validated_data['email'],
-    )
-
-        user.set_password(validated_data['password'])
-        user.save()
-        token = Token.objects.create(user=user)
+            password=validated_data['password'],
+        )
+        Token.objects.create(user=user)  # 토큰 생성
         return user
     
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, write_only=True)
-    # write_only=True 옵션을 통해 클라이언트->서버의 역직렬화는 가능하지만, 서버->클라이언트 방향의 직렬화는 불가능하도록 해준다.
     
     def validate(self, data):
-        user = authenticate(**data)
+        user = authenticate(username=data['email'], password=data['password'])
         if user:
-            token = Token.objects.get(user=user) # 해당 유저의 토큰을 불러옴
+            token = Token.objects.get(user=user)
             return token
-        raise serializers.ValidationError( # 가입된 유저가 없을 경우
+        raise serializers.ValidationError(
             {"error": "일치하는 회원 정보가 없습니다."}
         )
     
