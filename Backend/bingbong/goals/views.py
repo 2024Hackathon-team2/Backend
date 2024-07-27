@@ -328,7 +328,16 @@ class SocialView(APIView):
       "percentage"  : wine_record/wine_goal if wine_goal != 0 else 0
     }
 
-    #친구의 달성률
+    # 친구의 달성률
+    # user의 친구 리스트 불러오기
+    # user의 친구 정보 리스트로 받기
+
+    # for 문
+      # user의 친구 정보로 친구의 목표 정보 가져오기
+      # 각 친구의 목표 정보 밑 친구의 정보 {}에 저장하기
+      # {"username": "유저 이름", "achievement":~~}
+    # 반복문 돌면서 친구의 달성률 계산
+
 
 
     data = {
@@ -339,4 +348,13 @@ class SocialView(APIView):
       "wine"    : wine
       #"friends" : 
     }
+    return Response()
+  
+class CheerView(APIView):
+  def post(self, request):
+    # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
+
+    # 목표 정보 중 cheer만 +1 하기
+
+    # 친구에거 웹 푸시 알림가게 하기
     return Response()
