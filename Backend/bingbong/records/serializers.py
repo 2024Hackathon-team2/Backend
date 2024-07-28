@@ -6,6 +6,8 @@ class RecordSerializer(serializers.ModelSerializer):
     model = Record
     fields = ['user', 'year', 'month', 'day', 'dow', 'soju_record', 'beer_record', 'mak_record', 'wine_record']
 
+
+
 class RecordPatchSerializer(serializers.ModelSerializer):
   class Meta:
     model = Record
