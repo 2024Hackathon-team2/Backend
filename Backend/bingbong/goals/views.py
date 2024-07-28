@@ -9,6 +9,7 @@ from records.models import *
 from records.serializers import *
 from datetime import datetime
 from decimal import Decimal
+from rest_framework.permissions import IsAuthenticated
 # from permissions import CustomReadOnly # modelviewset으로 바꿀지 고민 중...
 # https://newbiecs.tistory.com/316 참고해서 공부하고 코드 변경해보기
 
@@ -351,10 +352,18 @@ class SocialView(APIView):
     return Response()
   
 class CheerView(APIView):
+  permission_classes = [IsAuthenticated]
   def post(self, request):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
+    friend_id = request.data.get('friend_id')
+
+    friend = get_object_or_404(User, id=friend_id)
+    now = datetime.now()
+    goal = get_object_or_404(Goal, user=friend, year=now.year, month=now.month)
 
     # 목표 정보 중 cheer만 +1 하기
+    goal.cheer += 1
+    goal.save()
 
-    # 친구에거 웹 푸시 알림가게 하기
-    return Response()
+    # 응원 성공 메시지 반환
+    return Response({"message": "응원을 보냈습니다"}, status=status.HTTP_200_OK)
