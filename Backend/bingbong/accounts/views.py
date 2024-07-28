@@ -51,6 +51,10 @@ class MypageView(generics.RetrieveUpdateAPIView):
     serializer_class = MypageSerializer
     permission_classes = [CustomReadOnly]
 
+    #현재 인증된 사용자의 Mypage객체를 반환
+    def get_object(self):
+        return Mypage.objects.get(user=self.request.user)
+
 class AddFriendView(APIView):
     permission_classes = [IsAuthenticated]
 
