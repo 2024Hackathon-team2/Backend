@@ -43,8 +43,10 @@ INSTALLED_APPS = [
     'goals',
     'records',
     'accounts',
-    'corsheaders'
+    'corsheaders',
 ]
+
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
