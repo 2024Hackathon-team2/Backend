@@ -374,10 +374,18 @@ class SocialView(APIView):
     return Response(data, status=status.HTTP_200_OK)
   
 class CheerView(APIView):
-  def post(self, request):
+  def post(self, request, friend_id):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
-    
+    friend = get_object_or_404(User, pk=friend_id)
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
     # 목표 정보 중 cheer만 +1 하기
+    goal = get_object_or_404(Goal, user=friend, year=year, month=month)
+    goal.cheer += 1
+    goal.save()
 
     # 친구에거 웹 푸시 알림가게 하기
-    return Response()
+    
+    return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)
