@@ -11,7 +11,7 @@ from datetime import datetime, date
 class RecordsView(APIView):
   def post(self, request):
     if not request.user.is_authenticated:
-      return Response({"message": "수정 권한이 없습니다."})
+      return Response({"message": "권한이 없습니다."})
 
     year  = request.data.get('year')
     month = request.data.get('month')
@@ -58,11 +58,11 @@ class RecordView(APIView):
       serializer = RecordSerializer(record, many=False)
       return Response(serializer.data, status=status.HTTP_200_OK)
     else:
-      return Response({"message": "수정 권한이 없습니다."})
+      return Response({"message": "권한이 없습니다."})
   
   def delete(self, request, record_id):
     if not request.user.is_authenticated:
-      return Response({"message": "수정 권한이 없습니다."})
+      return Response({"message": "권한이 없습니다."})
 
     record = get_object_or_404(Record, pk=record_id)
     if request.user == record.user:

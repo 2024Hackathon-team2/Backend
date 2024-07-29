@@ -38,10 +38,22 @@ class LoginView(generics.GenericAPIView):
             "access": data['access']
         }, status=status.HTTP_200_OK)
 
+class DeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        user.delete()
+        return Response({"message" : "계정이 탈퇴되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+
 class MypageView(generics.RetrieveUpdateAPIView):
     queryset = Mypage.objects.all()
     serializer_class = MypageSerializer
     permission_classes = [CustomReadOnly]
+
+    #현재 인증된 사용자의 Mypage객체를 반환
+    def get_object(self):
+        return Mypage.objects.get(user=self.request.user)
 
 class AddFriendView(APIView):
     permission_classes = [IsAuthenticated]
