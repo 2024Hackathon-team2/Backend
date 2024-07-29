@@ -68,7 +68,7 @@ class GoalView(APIView):
 
     records = Record.objects.filter(user=request.user, year=year, month=month)
     for a in records:
-      date.append(a.day)
+      date.append({'day': a.day, 'id': a.id})
       total_soju += a.soju_record
       total_beer += a.beer_record
       total_mak += a.mak_record
@@ -143,7 +143,7 @@ class GoalView(APIView):
     total_record = Decimal('0.0')
     records = Record.objects.filter(user=request.user, year=year, month=month)
     for a in records:
-      date.append(a.day)
+      date.append({'day': a.day, 'id': a.id})
       total_soju += a.soju_record
       total_beer += a.beer_record
       total_mak += a.mak_record
@@ -221,7 +221,7 @@ class GoalView(APIView):
 
       records = Record.objects.filter(user=request.user, year=year, month=month)
       for a in records:
-        date.append(a.day)
+        date.append({'day': a.day, 'id': a.id})
         total_soju += a.soju_record
         total_beer += a.beer_record
         total_mak += a.mak_record
@@ -331,7 +331,7 @@ class SocialView(APIView):
     # 친구의 달성률
     # user의 친구 리스트 불러오기
     # user의 친구 정보 리스트로 받기
-
+    
     # for 문
       # user의 친구 정보로 친구의 목표 정보 가져오기
       # 각 친구의 목표 정보 밑 친구의 정보 {}에 저장하기
