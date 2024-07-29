@@ -382,6 +382,10 @@ class CheerView(APIView):
     user_page = get_object_or_404(Mypage, user = user)
     friend = get_object_or_404(User, pk=friend_id)
     friend_page = get_object_or_404(Mypage, user=friend)
+
+    if friend_id not in user_page.friends:
+      return Response({"message":"내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
+
     now = datetime.now()
     year = now.year
     month = now.month
@@ -399,7 +403,7 @@ class CheerView(APIView):
               "url": "http://127.0.0.1:8000/goals/" #배포하는 사이트의 url에 맞춰 변경 예정
               }
     payload = json.dumps(payload)
-    
+
     send_user_notification(user=friend, payload=payload)
 
     return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)
