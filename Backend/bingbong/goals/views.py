@@ -353,7 +353,7 @@ class SocialView(APIView):
 class CheerView(APIView):
   def post(self, request):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
-
+    
     # 목표 정보 중 cheer만 +1 하기
 
     # 친구에거 웹 푸시 알림가게 하기
