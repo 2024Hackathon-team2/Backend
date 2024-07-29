@@ -43,8 +43,15 @@ INSTALLED_APPS = [
     'goals',
     'records',
     'accounts',
-    'corsheaders'
+    'corsheaders',
+    'webpush',
 ]
+
+WEBPUSH_SEETINGS = {
+    "VAPID_PUBLIC_KEY": "BOdorxGPh3xlXNhXYUXuKBmRY9KTQUn99ZRFxjxdm6wNMB3BS1kNqPgcXHS2Kocg4rhRMH5lu0W94D96Sc6Q4Jo",
+    "VAPID_PRIVATE_KEY":"ZCn4GpWdSBLGNeoLdc0nOOtxs4kKAaPlOn1vaFtFV9U",
+    "VAPID_ADMIN_EMAIL": "jiminyou670@gmail.com"
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
