@@ -11,7 +11,7 @@ from datetime import datetime, date
 class RecordsView(APIView):
   def post(self, request):
     if not request.user.is_authenticated:
-      return Response({"message": "권한이 없습니다."})
+      return Response({"message": "권한이 없습니다."},status=status.HTTP_400_BAD_REQUEST)
 
     year  = request.data.get('year')
     month = request.data.get('month')
