@@ -20,6 +20,16 @@ class GoalView(APIView):
     now = datetime.now()
     year = now.year
     month = now.month
+
+    year = request.query_params.get('year', now.year)
+    month = request.query_params.get('month', now.month)
+
+    try:
+      year = int(year)
+      month = int(month)
+    except ValueError:
+      return Response({"message": "연도와 달은 정수여야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
     user = request.user
     user_id = user.id
     # 없으면 목표가 전부 0이게 새로 생성
@@ -94,6 +104,12 @@ class GoalView(APIView):
       percentage = total_record/total_goal * 100
 
     data ={
+      "year": year,
+      "month": month,
+      "before":{
+          "year": year-1 if month == 1 else year,
+          "month": 12 if month == 1 else month-1
+        },
       "user": user,
       "goal": goal,
       "record": {
@@ -107,7 +123,7 @@ class GoalView(APIView):
 
     return Response(data, status=status.HTTP_200_OK)
   
-  def post(self, request):
+  # def post(self, request):
     #주종, 주량, 유저
     if not request.user.is_authenticated:
       return Response({"message": "수정 권한이 없습니다."})
@@ -168,6 +184,8 @@ class GoalView(APIView):
     else:
       percentage = total_record/total_goal * 100
     data ={
+      "year":year,
+      "month":month,
       "user": user,
     "goal": goal,
     "record": {
@@ -246,6 +264,12 @@ class GoalView(APIView):
       else:
         percentage = total_record/total_goal * 100
       data ={
+        "year":year,
+        "month":month,
+        "before":{
+          "year": year if month != 1 else year-1,
+          "month": 12 if month == 1 else month-1
+        },
       "user": user,
       "goal": goal,
       "record": {
@@ -407,3 +431,4 @@ class CheerView(APIView):
     send_user_notification(user=friend, payload=payload)
 
     return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)
+  
