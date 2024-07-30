@@ -200,9 +200,7 @@ class TestAnswerView(APIView):
 
     else:
       return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
-      
     
-
 class TestResultView(generics.RetrieveAPIView):
     serializer_class = TestResultSerializer
 
