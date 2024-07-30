@@ -16,7 +16,9 @@ class TestStartView(APIView):
       return Response({"message": "로그인이 필요합니다."},status=status.HTTP_400_BAD_REQUEST)
 
     q_list = TestQuestion.objects.all()
+    q_list = list(q_list)
     random_q = random.sample(q_list, 4)
+
     q1 = random_q[0]
     q2 = random_q[2]
     q3 = random_q[3]
@@ -25,23 +27,30 @@ class TestStartView(APIView):
     user = request.user
     user_id = user.id
 
-    date = datetime.now()
+    date = datetime.now().date()
 
     data = {
       "user": user_id,
       "date": date,
-      "q1": q1,
-      "q2": q2,
-      "q3": q3,
-      "q4": q4
+      "q1": q1.id,
+      "q2": q2.id,
+      "q3": q3.id,
+      "q4": q4.id
     }
     
 
-    serializer = TestResultSerializer(data=date)
+    serializer = TestResultSerializer(data=data)
     if serializer.is_valid():
       instance = serializer.save()
       pk = instance.pk
-      return Response({"pk":pk,"data":serializer.data}, status=status.HTTP_400_BAD_REQUEST)
+      question = get_object_or_404(TestQuestion, pk=q1.id)
+      data = {
+        "pk": pk,
+        "stage": instance.stage,
+        "q1": question.question
+
+      }
+      return Response(data, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
 class TestAnswerView(APIView):
@@ -58,16 +67,48 @@ class TestAnswerView(APIView):
         test_result.a1 = True
       else:
         test_result.a1 = False
+
+      
+
     elif test_result.stage == 2:
-        test_result.a2 = answer
+      if test_result.q2.answer == answer:
+        test_result.a2 = True
+      else:
+        test_result.a2 = False
+
     elif test_result.stage == 3:
-        test_result.a3 = answer
+      if test_result.q3.answer == answer:
+        test_result.a3 = True
+      else:
+        test_result.a3 = False
+
     elif test_result.stage == 4:
-        test_result.a4 = answer
+      if test_result.q4.answer == answer:
+        test_result.a4 = True
+      else:
+        test_result.a4 = False
+      
+
+
     else:
       return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
     
     stage = test_result.stage + 1
+
+    data = {
+      "stage": stage,
+      "a1": test_result.a1,
+      "a2": test_result.a2,
+      "a3": test_result.a3,
+      "a4": test_result.a4,
+    }
+    serializer = TestResultSerializer(test_result, data=data)
+    if serializer.is_valid():
+      instance = serializer.save()
+      pk = instance.pk
+      return Response({"pk":pk,"data":serializer.data}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+      return Response({"message": "권한이 없습니다."})
 
 
     

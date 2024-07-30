@@ -6,7 +6,7 @@ class TestQuestion(models.Model):
   answer = models.IntegerField()
 
   def __str__(self):
-    return self.pk
+    return str(self.pk)
 
 class TestResult(models.Model):
   user = models.ForeignKey(
