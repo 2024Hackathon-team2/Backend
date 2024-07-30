@@ -48,67 +48,159 @@ class TestStartView(APIView):
         "pk": pk,
         "stage": instance.stage,
         "q1": question.question
-
       }
-      return Response(data, status=status.HTTP_400_BAD_REQUEST)
+      return Response(data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
   
 class TestAnswerView(APIView):
+  def get(self, request, pk):
+    test_result = get_object_or_404(TestResult, pk=pk)
+
+    if request.user != test_result.user:
+      return Response({"message": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if test_result.stage == 2:
+      question = get_object_or_404(TestQuestion, pk=test_result.q2.id)
+      data = {
+      "pk": pk,
+      "stage": test_result.stage,
+      "q2": question.question
+      }
+      return Response(data, status=status.HTTP_200_OK)
+
+    elif test_result.stage == 3:
+      question = get_object_or_404(TestQuestion, pk=test_result.q3.id)
+      data = {
+      "pk": pk,
+      "stage": test_result.stage,
+      "q3": question.question
+      }
+      return Response(data, status=status.HTTP_200_OK)
+
+    elif test_result.stage == 4:
+      question = get_object_or_404(TestQuestion, pk=test_result.q4.id)
+      data = {
+      "pk": pk,
+      "stage": test_result.stage,
+      "q4": question.question
+      }
+      return Response(data, status=status.HTTP_200_OK)
+    else:
+      return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
+
+
   def patch(self, request, pk):
     test_result = get_object_or_404(TestResult, pk=pk)
 
     if request.user != test_result.user:
       return Response({"message": "권한이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
     
-    answer = request.POST.get('answer')
+    answer = int(request.data.get('answer'))
 
     if test_result.stage == 1:
+      test_result.stage += 1
       if test_result.q1.answer == answer:
         test_result.a1 = True
       else:
         test_result.a1 = False
+      update = {
+        "a1": test_result.a1
+      }
 
-      
+      serializer = TestAnswerSerializer(test_result, data=update)
+      if serializer.is_valid():
+        instance = serializer.save()
+        pk = instance.pk
+        data = {
+          "pk": pk,
+          "stage": instance.stage - 1,
+          "result": "정답입니다!" if test_result.a1 else "오답입니다 :("
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif test_result.stage == 2:
+      test_result.stage += 1
       if test_result.q2.answer == answer:
         test_result.a2 = True
       else:
         test_result.a2 = False
+      update = {
+        "a2": test_result.a2
+      }
+
+      serializer = TestAnswerSerializer(test_result, data=update)
+      if serializer.is_valid():
+        instance = serializer.save()
+        pk = instance.pk
+        data = {
+          "pk": pk,
+          "stage": instance.stage - 1,
+          "result": "정답입니다!" if test_result.a2 else "오답입니다 :("
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif test_result.stage == 3:
+      test_result.stage += 1
       if test_result.q3.answer == answer:
         test_result.a3 = True
       else:
         test_result.a3 = False
+      update = {
+        "a3": test_result.a3
+      }
+
+      serializer = TestAnswerSerializer(test_result, data=update)
+      if serializer.is_valid():
+        instance = serializer.save()
+        pk = instance.pk
+        data = {
+          "pk": pk,
+          "stage": instance.stage -1,
+          "result": "정답입니다!" if test_result.a3 else "오답입니다 :("
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif test_result.stage == 4:
       if test_result.q4.answer == answer:
         test_result.a4 = True
       else:
         test_result.a4 = False
-      
+      score = test_result.a1 + test_result.a2 + test_result.a3 + test_result.a4
+      score = score * 25
+      if score <= 25:
+        level = 3 # 취함
+      elif score <= 75:
+        level = 2 # 알딸딸 
+      else:
+        level = 1 # 멀쩡
 
+      update = {
+        "a4": test_result.a4,
+        "score": score,
+        "level": level
+      }
+
+      serializer = TestAnswerSerializer(test_result, data=update)
+      if serializer.is_valid():
+        instance = serializer.save()
+        pk = instance.pk
+
+        data = {
+          "pk": pk,
+          "stage": instance.stage,
+          "result": "정답입니다!" if test_result.a4 else "오답입니다 :("
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     else:
       return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
+      
     
-    stage = test_result.stage + 1
 
-    data = {
-      "stage": stage,
-      "a1": test_result.a1,
-      "a2": test_result.a2,
-      "a3": test_result.a3,
-      "a4": test_result.a4,
-    }
-    serializer = TestResultSerializer(test_result, data=data)
-    if serializer.is_valid():
-      instance = serializer.save()
-      pk = instance.pk
-      return Response({"pk":pk,"data":serializer.data}, status=status.HTTP_400_BAD_REQUEST)
-    else:
-      return Response({"message": "권한이 없습니다."})
 
 
     
