@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -8,6 +8,8 @@ from .models import *
 from .serializers import *
 from datetime import datetime, date
 import random
+from .serializers import TestHistorySerializer
+
 
 # Create your views here.
 class TestStartView(APIView):
@@ -198,9 +200,41 @@ class TestAnswerView(APIView):
 
     else:
       return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
-      
     
+class TestResultView(generics.RetrieveAPIView):
+    serializer_class = TestResultSerializer
 
+    def get(self, request, pk):
+        test_result = get_object_or_404(TestResult, pk=pk)
 
+        # 각 질문에 대한 결과와 정답률, 레벨 설명 계산
+        level_description = self.get_level_description(test_result.level)
+        
+        result_data = {
+            "q1_result": "정답" if test_result.a1 is True else "오답",
+            "q2_result": "정답" if test_result.a2 is True else "오답",
+            "q3_result": "정답" if test_result.a3 is True else "오답",
+            "q4_result": "정답" if test_result.a4 is True else "오답",
+            "level": test_result.level,
+            "level_description": level_description,
+            "score": test_result.score
+        }
 
-    
+        return Response(result_data, status=status.HTTP_200_OK)
+
+    def get_level_description(self, level):
+        if level == 1:
+            return "멀쩡"
+        elif level == 2:
+            return "알딸딸"
+        elif level == 3:
+            return "취함"
+
+class TestHistoryView(generics.ListAPIView):
+    serializer_class = TestHistorySerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return TestResult.objects.none()  # 빈 쿼리셋 반환
+        return TestResult.objects.filter(user=user).order_by('-date')  # 사용자가 수행한 테스트 결과를 날짜순으로 정렬
