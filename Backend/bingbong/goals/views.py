@@ -10,7 +10,6 @@ from records.serializers import *
 from accounts.models import *
 from datetime import datetime
 from decimal import Decimal
-from rest_framework.permissions import IsAuthenticated
 from webpush import send_user_notification
 import json
 # from permissions import CustomReadOnly # modelviewset으로 바꿀지 고민 중...
@@ -377,10 +376,34 @@ class SocialView(APIView):
     return Response(data, status=status.HTTP_200_OK)
   
 class CheerView(APIView):
-  def post(self, request):
+  def post(self, request, friend_id):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
+    user = request.user
+    user_page = get_object_or_404(Mypage, user = user)
+    friend = get_object_or_404(User, pk=friend_id)
+    friend_page = get_object_or_404(Mypage, user=friend)
+
+    if friend_id not in user_page.friends:
+      return Response({"message":"내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    now = datetime.now()
+    year = now.year
+    month = now.month
 
     # 목표 정보 중 cheer만 +1 하기
+    goal = get_object_or_404(Goal, user=friend, year=year, month=month)
+    goal.cheer += 1
+    goal.save()
 
-    # 친구에거 웹 푸시 알림가게 하기
-    return Response()
+    # 친구에게 웹 푸시 알림가게 하기
+    body_messeage = "{}({})님이 {}님께 음주 목표를 달성하면 좋겠다는 응원을 보냈어요. 건강한 음주 습관을 위해 이번 달도 화이팅!".format(user_page.nickname, user.email, friend_page.nickname)
+    payload = {"head": "친구에게 응원을 받았어요!🎉",
+              "body": body_messeage,
+              "icon": "https://i.imgur.com/dRDxiCQ.png",
+              "url": "http://127.0.0.1:8000/goals/" #배포하는 사이트의 url에 맞춰 변경 예정
+              }
+    payload = json.dumps(payload)
+
+    send_user_notification(user=friend, payload=payload)
+
+    return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)
