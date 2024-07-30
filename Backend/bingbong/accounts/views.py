@@ -58,10 +58,20 @@ class MypageView(generics.RetrieveUpdateAPIView):
 class AddFriendView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, user_id):
+    def post(self, request):
         try:
             user_profile = Mypage.objects.get(user=request.user)
-            friend_profile = Mypage.objects.get(user__id=user_id)
+            friend_email = request.data.get('email')
+
+            if not friend_email:
+                return Response({"detail": "이메일을 입력하세요.", "code": "email_required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                friend_user = User.objects.get(email=friend_email)
+            except User.DoesNotExist:
+                return Response({"detail": "해당 이메일을 가진 사용자를 찾을 수 없습니다.", "code": "user_not_found"}, status=status.HTTP_404_NOT_FOUND)
+
+            friend_profile = Mypage.objects.get(user=friend_user)
 
             if friend_profile in user_profile.friends.all():
                 return Response({"detail": "이미 친구입니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -71,7 +81,7 @@ class AddFriendView(APIView):
             return Response({"detail": "친구 추가 완료"}, status=status.HTTP_200_OK)
         
         except Mypage.DoesNotExist:
-            return Response({"detail": "사용자를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "프로필을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
