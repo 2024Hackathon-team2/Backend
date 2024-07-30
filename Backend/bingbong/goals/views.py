@@ -7,9 +7,11 @@ from .models import Goal
 from .serializers import *
 from records.models import *
 from records.serializers import *
+from accounts.models import *
 from datetime import datetime
 from decimal import Decimal
-from rest_framework.permissions import IsAuthenticated
+from webpush import send_user_notification
+import json
 # from permissions import CustomReadOnly # modelviewset으로 바꿀지 고민 중...
 # https://newbiecs.tistory.com/316 참고해서 공부하고 코드 변경해보기
 
@@ -69,7 +71,7 @@ class GoalView(APIView):
 
     records = Record.objects.filter(user=request.user, year=year, month=month)
     for a in records:
-      date.append(a.day)
+      date.append({'day': a.day, 'id': a.id})
       total_soju += a.soju_record
       total_beer += a.beer_record
       total_mak += a.mak_record
@@ -144,7 +146,7 @@ class GoalView(APIView):
     total_record = Decimal('0.0')
     records = Record.objects.filter(user=request.user, year=year, month=month)
     for a in records:
-      date.append(a.day)
+      date.append({'day': a.day, 'id': a.id})
       total_soju += a.soju_record
       total_beer += a.beer_record
       total_mak += a.mak_record
@@ -222,7 +224,7 @@ class GoalView(APIView):
 
       records = Record.objects.filter(user=request.user, year=year, month=month)
       for a in records:
-        date.append(a.day)
+        date.append({'day': a.day, 'id': a.id})
         total_soju += a.soju_record
         total_beer += a.beer_record
         total_mak += a.mak_record
@@ -283,7 +285,9 @@ class SocialView(APIView):
     goal_serializer = GoalSerializer(goal)
     goal_data = goal_serializer.data
     
-    #응원
+    #사용자 id, 응원
+    user = request.user
+    user_id = user.id
     cheer = goal_data['cheer']
     #사용자 설정 목표
     soju_goal = Decimal(goal_data['soju_goal'])
@@ -293,16 +297,18 @@ class SocialView(APIView):
 
     #기록
     records = Record.objects.filter(user=request.user, year=year, month=month)
-    soju_record = 0.0
-    beer_record = 0.0
-    mak_record  = 0.0
-    wine_record = 0.0
+    soju_record = Decimal(0.0)
+    beer_record = Decimal(0.0)
+    mak_record  = Decimal(0.0)
+    wine_record = Decimal(0.0)
 
     for record in records:
-      soju_record += record.soju_record
-      beer_record += record.beer_record
-      mak_record  += record.mak_record
-      wine_record += record.wine_record
+      record_serializer = RecordSerializer(record)
+      record_data = record_serializer.data
+      soju_record += Decimal(record_data['soju_record'])
+      beer_record += Decimal(record_data['beer_record'])
+      mak_record  += Decimal(record_data['mak_record'])
+      wine_record += Decimal(record_data['wine_record'])
     
     #목표 달성율
     soju = {
@@ -332,9 +338,27 @@ class SocialView(APIView):
     # 친구의 달성률
     # user의 친구 리스트 불러오기
     # user의 친구 정보 리스트로 받기
-
-    # for 문
+    friends_list = []
+    user = get_object_or_404(Mypage, user=request.user)
+    for friend in user.friends.all():
       # user의 친구 정보로 친구의 목표 정보 가져오기
+      user_friend = get_object_or_404(User, pk=friend.pk)
+      friend_total_goal = Decimal(0.0)
+      goal = get_object_or_404(Goal, year=year, month=month, user=user_friend)
+      goal_serializer = GoalSerializer(goal)
+      goal_data = goal_serializer.data
+      friend_total_goal = Decimal(goal_data['soju_goal']) + Decimal(goal_data['beer_goal']) + Decimal(goal_data['mak_goal']) + Decimal(goal_data['wine_goal'])
+
+      records = Record.objects.filter(user=user_friend, year=year, month=month)
+      friend_total_record = Decimal(0.0)
+      for record in records:
+        record_serializer = RecordSerializer(record)
+        record_data = record_serializer.data
+        friend_total_record += Decimal(record_data['soju_record']) + Decimal(record_data['beer_record']) + Decimal(record_data['mak_record']) + Decimal(record_data['wine_record'])
+      
+      percentage = friend_total_record/friend_total_goal if friend_total_goal!=0 else 0
+      
+      friends_list.append({"friend":user_friend.id, "goal": friend_total_goal, "record": friend_total_record, "percentage": percentage})
       # 각 친구의 목표 정보 밑 친구의 정보 {}에 저장하기
       # {"username": "유저 이름", "achievement":~~}
     # 반복문 돌면서 친구의 달성률 계산
@@ -346,24 +370,40 @@ class SocialView(APIView):
       "soju"    : soju,
       "beer"    : beer,
       "mak"     : mak,
-      "wine"    : wine
-      #"friends" : 
+      "wine"    : wine,
+      "friends" : friends_list
     }
-    return Response()
+    return Response(data, status=status.HTTP_200_OK)
   
 class CheerView(APIView):
-  permission_classes = [IsAuthenticated]
-  def post(self, request):
+  def post(self, request, friend_id):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
-    friend_id = request.data.get('friend_id')
+    user = request.user
+    user_page = get_object_or_404(Mypage, user = user)
+    friend = get_object_or_404(User, pk=friend_id)
+    friend_page = get_object_or_404(Mypage, user=friend)
 
-    friend = get_object_or_404(User, id=friend_id)
+    if friend_id not in user_page.friends:
+      return Response({"message":"내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
+
     now = datetime.now()
-    goal = get_object_or_404(Goal, user=friend, year=now.year, month=now.month)
+    year = now.year
+    month = now.month
 
     # 목표 정보 중 cheer만 +1 하기
+    goal = get_object_or_404(Goal, user=friend, year=year, month=month)
     goal.cheer += 1
     goal.save()
 
-    # 응원 성공 메시지 반환
-    return Response({"message": "응원을 보냈습니다"}, status=status.HTTP_200_OK)
+    # 친구에게 웹 푸시 알림가게 하기
+    body_messeage = "{}({})님이 {}님께 음주 목표를 달성하면 좋겠다는 응원을 보냈어요. 건강한 음주 습관을 위해 이번 달도 화이팅!".format(user_page.nickname, user.email, friend_page.nickname)
+    payload = {"head": "친구에게 응원을 받았어요!🎉",
+              "body": body_messeage,
+              "icon": "https://i.imgur.com/dRDxiCQ.png",
+              "url": "http://127.0.0.1:8000/goals/" #배포하는 사이트의 url에 맞춰 변경 예정
+              }
+    payload = json.dumps(payload)
+
+    send_user_notification(user=friend, payload=payload)
+
+    return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)

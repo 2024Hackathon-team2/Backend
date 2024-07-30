@@ -26,8 +26,8 @@ SECRET_KEY = 'django-insecure-h75!)jf893b2^+6u7r4%okk1i2t1*31yq#p^ont89^d^i5wexa
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1']
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+#'drinkit.pythonanywhere.com'
 
 # Application definition
 
@@ -44,9 +44,13 @@ INSTALLED_APPS = [
     'records',
     'accounts',
     'corsheaders',
+    'webpush',
 ]
-
-
+WEBPUSH_SEETINGS = {
+    "VAPID_PUBLIC_KEY": "BOdorxGPh3xlXNhXYUXuKBmRY9KTQUn99ZRFxjxdm6wNMB3BS1kNqPgcXHS2Kocg4rhRMH5lu0W94D96Sc6Q4Jo",
+    "VAPID_PRIVATE_KEY":"ZCn4GpWdSBLGNeoLdc0nOOtxs4kKAaPlOn1vaFtFV9U",
+    "VAPID_ADMIN_EMAIL": "jiminyou670@gmail.com"
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -74,6 +78,7 @@ SIMPLE_JWT = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,7 +86,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    
 ]
 CORS_ORIGIN_ALLOW_ALL=True
 CORS_ALLOW_CREDENTIALS = True
@@ -171,7 +176,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
