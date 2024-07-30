@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'accounts',
     'corsheaders',
     'webpush',
+    'testsystem',
 ]
 WEBPUSH_SEETINGS = {
     "VAPID_PUBLIC_KEY": "BOdorxGPh3xlXNhXYUXuKBmRY9KTQUn99ZRFxjxdm6wNMB3BS1kNqPgcXHS2Kocg4rhRMH5lu0W94D96Sc6Q4Jo",
