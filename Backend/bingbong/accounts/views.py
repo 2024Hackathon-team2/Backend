@@ -52,8 +52,15 @@ class DeleteView(APIView):
 
     def delete(self, request):
         user = request.user
+        user_profile = get_object_or_404(Mypage, user=user)
+
+        #사용자 정보 저장
+        email = user.email
+        nickname = user_profile.nickname
+
         user.delete()
-        return Response({"message" : "계정이 탈퇴되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({"message" : "계정이 탈퇴되었습니다.", "email" : email, "nicakname" : nickname }, status=status.HTTP_204_NO_CONTENT)
 
 class MypageView(generics.RetrieveUpdateAPIView):
     queryset = Mypage.objects.all()
