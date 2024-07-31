@@ -43,16 +43,18 @@ class RecordsView(APIView):
       total_record = Decimal(0.0)
       serializer = RecordSerializer(data=data)
       if serializer.is_valid():
-        instance = serializer.save()
-        total_record = Decimal(instance.soju_record)+Decimal(instance.beer_record)+Decimal(instance.mak_record)+Decimal(instance.wine_record)
-        data = {
-          "record_id"   : instance.pk,
-          "record_count": record_count + 1,
-          "total_record": total_record
+        serializer.save()
+      
+      record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
+      total_record = Decimal(record.soju_record)+Decimal(record.beer_record)+Decimal(record.mak_record)+Decimal(record.wine_record)
+      data = {
+        "record_id"   : record.pk,
+        "record_count": record_count + 1,
+        "total_record": total_record
         }
 
-        return Response(data, status=status.HTTP_201_CREATED)
-      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      return Response(data, status=status.HTTP_201_CREATED)
+
     
 
 class RecordView(APIView):
@@ -67,28 +69,29 @@ class RecordView(APIView):
 
     record = get_object_or_404(Record, pk=record_id)
     
-    if record.user == request.user:
-      serializer = RecordPatchSerializer(record, data=request.data)
-      if serializer.is_valid():
-        serializer.save()
-
-      record = get_object_or_404(Record, user=request.user, pk=record_id)
-      serializer = RecordSerializer(record, many=False)
-      records = Record.objects.filter(user=request.user, year=record.year, month=record.month)
-      record_count = records.count()
-      total_record = Decimal(0, 0)
-      serializer = RecordSerializer(data=data)
-      if serializer.is_valid():
-        instance = serializer.save()
-        total_record = instance.soju_record+instance.beer_record+instance.mak_record+instance.wine_record
-        data = {
-          "record_count": record_count,
-          "total_record": total_record
-        }
-
-      return Response(data, status=status.HTTP_200_OK)
-    else:
+    if record.user != request.user:
       return Response({"message": "권한이 없습니다."})
+    
+    serializer = RecordPatchSerializer(record, data=request.data)
+    if not serializer.is_valid():
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    serializer.save()
+
+    record = get_object_or_404(Record, user=request.user, pk=record_id)
+    records = Record.objects.filter(user=request.user, year=record.year, month=record.month)
+    record_count = records.count()
+    total_record = Decimal(0.0)
+
+    total_record = Decimal(record.soju_record) + Decimal(record.beer_record) + Decimal(record.mak_record) + Decimal(record.wine_record)
+
+    data = {
+      "record_count": record_count,
+      "total_record": total_record
+    }
+
+    return Response(data, status=status.HTTP_200_OK)
+
   
   def delete(self, request, record_id):
     if not request.user.is_authenticated:
