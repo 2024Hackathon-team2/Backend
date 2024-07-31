@@ -112,7 +112,7 @@ class DeleteFriendView(APIView):
         if friend_page in user_page.friends.all():
             user_page.friends.remove(friend_page)
             friend_page.friends.remove(user_page)
-            return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
+            return Response({"message": "삭제되었습니다.", "friend": friend_page.nickname, "friend_email": friend.email}, status=status.HTTP_200_OK)
         return Response({"message": "내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 class FriendsView(APIView):

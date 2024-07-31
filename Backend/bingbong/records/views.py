@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
@@ -6,6 +7,7 @@ from rest_framework.decorators import api_view
 from rest_framework.generics import get_object_or_404
 from .models import *
 from .serializers import *
+from goals.models import *
 from datetime import datetime, date
 
 class RecordsView(APIView):
@@ -20,22 +22,36 @@ class RecordsView(APIView):
     year  = int(year)
     month = int(month)
     day   = int (day)
-    
-    request_date = date(year, month, day)
-    days = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
-    weekday = request_date.weekday()
 
-    user = request.user
-    user_id = user.id
-    data = request.data.copy()
-    data.update({"user": user_id,
-                    "dow": days[weekday]})
+    try:
+      record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
+    except Record.DoesNotExist:
+      request_date = date(year, month, day)
+      days = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
+      weekday = request_date.weekday()
 
-    serializer = RecordSerializer(data=data)
-    if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      user = request.user
+      user_id = user.id
+      data = request.data.copy()
+      data.update({"user": user_id,
+                      "dow": days[weekday]})
+      
+      records = Record.objects.filter(user=request.user, year=year, month=month)
+      record_count = records.count()
+      total_record = Decimal(0.0)
+      serializer = RecordSerializer(data=data)
+      if serializer.is_valid():
+        instance = serializer.save()
+        total_record = Decimal(instance.soju_record)+Decimal(instance.beer_record)+Decimal(instance.mak_record)+Decimal(instance.wine_record)
+        data = {
+          "record_id"   : instance.pk,
+          "record_count": record_count + 1,
+          "total_record": total_record
+        }
+
+        return Response(data, status=status.HTTP_201_CREATED)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"message": "이미 존재하는 기록입니다. 기록을 수정해주세요.", "record_id": record.pk}, status=status.HTTP_400_BAD_REQUEST)
 
 class RecordView(APIView):
   def get(self, request, record_id):
@@ -56,7 +72,19 @@ class RecordView(APIView):
 
       record = get_object_or_404(Record, user=request.user, pk=record_id)
       serializer = RecordSerializer(record, many=False)
-      return Response(serializer.data, status=status.HTTP_200_OK)
+      records = Record.objects.filter(user=request.user, year=record.year, month=record.month)
+      record_count = records.count()
+      total_record = Decimal(0, 0)
+      serializer = RecordSerializer(data=data)
+      if serializer.is_valid():
+        instance = serializer.save()
+        total_record = instance.soju_record+instance.beer_record+instance.mak_record+instance.wine_record
+        data = {
+          "record_count": record_count,
+          "total_record": total_record
+        }
+
+      return Response(data, status=status.HTTP_200_OK)
     else:
       return Response({"message": "권한이 없습니다."})
   
