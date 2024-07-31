@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.http import Http404
 from django.shortcuts import render
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
@@ -25,7 +26,8 @@ class RecordsView(APIView):
 
     try:
       record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
-    except Record.DoesNotExist:
+      return Response({"message": "이미 존재하는 기록입니다. 기록을 수정해주세요.", "record_id": record.pk}, status=status.HTTP_400_BAD_REQUEST)
+    except Http404:
       request_date = date(year, month, day)
       days = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
       weekday = request_date.weekday()
@@ -51,7 +53,7 @@ class RecordsView(APIView):
 
         return Response(data, status=status.HTTP_201_CREATED)
       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    return Response({"message": "이미 존재하는 기록입니다. 기록을 수정해주세요.", "record_id": record.pk}, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class RecordView(APIView):
   def get(self, request, record_id):
