@@ -29,15 +29,14 @@ class GoalView(APIView):
       month = int(month)
     except ValueError:
       return Response({"message": "연도와 달은 정수여야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
-
+    
     user = request.user
     user_id = user.id
     user_page = get_object_or_404(Mypage, user=user)
     # 없으면 목표가 전부 0이게 새로 생성
     if not Goal.objects.filter(user=user, year=year, month=month).exists():
       data = {
-          "user":       user_page.nickname,
-          "user_id":    user_id,
+          "user":       user_id,
           "year":       year,
           "month":      month
           # 'soju_goal':  0,
