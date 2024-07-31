@@ -382,7 +382,7 @@ class SocialView(APIView):
       
       percentage = friend_total_record/friend_total_goal if friend_total_goal!=0 else 0
       
-      friends_list.append({"friend":user_friend.id, "goal": friend_total_goal, "record": friend_total_record, "percentage": percentage})
+      friends_list.append({"friend_id":user_friend.id, "goal": friend_total_goal, "record": friend_total_record, "percentage": percentage})
       # 각 친구의 목표 정보 밑 친구의 정보 {}에 저장하기
       # {"username": "유저 이름", "achievement":~~}
     # 반복문 돌면서 친구의 달성률 계산
@@ -399,6 +399,45 @@ class SocialView(APIView):
     }
     return Response(data, status=status.HTTP_200_OK)
   
+
+class FriendView(APIView):
+  def get(self, request, friend_id):
+    now   = datetime.now()
+    year  = now.year
+    month = now.month
+    day   = now.day
+
+    friend         = get_object_or_404(User, pk=friend_id)
+    friend_page    = get_object_or_404(Mypage, user=friend)
+    friend_goal    = get_object_or_404(Goal, user=friend, year=year, month=month)
+    friend_records = Record.objects.filter(user=friend, year=year, month=month)
+    
+    soju_record = Decimal(0.0)
+    beer_record = Decimal(0.0)
+    mak_record  = Decimal(0.0)
+    wine_record = Decimal(0.0)
+
+    for record in friend_records:
+      soju_record += record.soju_record
+      beer_record += record.beer_record
+      mak_record  += record.mak_record
+      wine_record += record.wine_record
+
+    data = {
+      "friend_id"   : friend.id,
+      "friend_name" : friend_page.nickname,
+      "soju_goal"   : friend_goal.soju_goal,
+      "beer_goal"   : friend_goal.beer_goal,
+      "mak_goal"    : friend_goal.mak_goal,
+      "wine_goal"   : friend_goal.wine_goal,
+      "soju_record" : soju_record,
+      "beer_record" : beer_record,
+      "mak_record"  : mak_record,
+      "wine_record" : wine_record
+      
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
 class CheerView(APIView):
   def post(self, request, friend_id):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
