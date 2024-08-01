@@ -8,5 +8,5 @@ urlpatterns = [
   path('social/', SocialView.as_view(), name='social-view'),
   path('social/<int:friend_id>', FriendView.as_view(), name='friend-view'),
   path('social/cheer/<int:friend_id>', CheerView.as_view(), name='cheer-view'),
-  re_path(r'^webpush/', include('webpush.urls')),
+  # re_path(r'^webpush/', include('webpush.urls')),
 ]

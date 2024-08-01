@@ -224,7 +224,7 @@ class SocialView(APIView):
     day   = now.day
 
     #목표
-    goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
+    goal, created = Goal.objects.get_or_create(user=request.user, year=year, month=month)
     goal_serializer = GoalSerializer(goal)
     goal_data = goal_serializer.data
     
@@ -315,14 +315,12 @@ class SocialView(APIView):
       user_friend = get_object_or_404(User, pk=friend.pk)
       friend_page = get_object_or_404(Mypage, user=user_friend)
       friend_total_goal = Decimal(0.0)
-      try:
-        goal = get_object_or_404(Goal, year=year, month=month, user=user_friend)
-      except Goal.DoesNotExist:
-        goal = None
-      if goal is not None:
-        goal_serializer = GoalSerializer(goal)
-        goal_data = goal_serializer.data
-        friend_total_goal = Decimal(goal_data['soju_goal']) + Decimal(goal_data['beer_goal']) + Decimal(goal_data['mak_goal']) + Decimal(goal_data['wine_goal'])
+
+      goal, created = Goal.objects.get_or_create(user=user_friend, year=year, month=month)
+
+      goal_serializer = GoalSerializer(goal)
+      goal_data = goal_serializer.data
+      friend_total_goal = Decimal(goal_data['soju_goal']) + Decimal(goal_data['beer_goal']) + Decimal(goal_data['mak_goal']) + Decimal(goal_data['wine_goal'])
 
       records = Record.objects.filter(user=user_friend, year=year, month=month)
       friend_total_record = Decimal(0.0)
