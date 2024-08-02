@@ -24,9 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-h75!)jf893b2^+6u7r4%okk1i2t1*31yq#p^ont89^d^i5wexa'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = False
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# ALLOWED_HOSTS = ['drinkit.pythonanywhere.com']
 #'drinkit.pythonanywhere.com'
 
 # Application definition

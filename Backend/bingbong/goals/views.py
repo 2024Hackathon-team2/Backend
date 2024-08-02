@@ -15,6 +15,63 @@ import json
 # from permissions import CustomReadOnly # modelviewset으로 바꿀지 고민 중...
 # https://newbiecs.tistory.com/316 참고해서 공부하고 코드 변경해보기
 
+soju = {
+  "1잔 (50ml)": 1.0,
+  "2잔": 2.0,
+  "3잔": 3.0,
+  "4잔": 4.0,
+  "5잔": 5.0,
+  "6잔": 6.0,
+  "7잔": 7.0,
+  "1병": 7.5,
+  "1병 반": 11.25,
+  "2병": 15,
+  "2병 반": 18.75,
+  "3병": 22.5,
+  "3병 반": 26.25
+}
+
+beer = {
+  "1잔 (200ml)": 1.0,
+  "2잔": 2.0,
+  "1병": 2.5,
+  "1병 반": 3.75,
+  "2병": 5,
+  "2병 반": 6.25,
+  "3병": 7.5,
+  "3병 반": 8.75,
+  "4병": 10,
+  "4병 반": 11.25,  
+}
+
+mak = {
+  "1사발 (250ml)": 1.0,
+  "2사발": 2.0,
+  "1병": 3.0,
+  "1병 반": 4.5,
+  "2병": 6.0,
+  "2병 반": 7.5,
+  "3병": 9.0,
+  "3병 반":10.5,
+  "4병":12.0,
+  "4병 반":13.5,
+}
+
+wine = {
+  "1잔 (150ml)": 1.0,
+  "2잔": 2.0,
+  "3잔": 3.0,
+  "4잔": 4.0,
+  "1병": 5.0,
+  "1병 반": 7.5,
+  "2병": 10.,
+  "2병 반": 12.5,
+  "3병": 15.0,
+  "3병 반": 17.5,
+  "4병": 20.0,
+  "4병 반": 22.5,
+}
+
 class GoalView(APIView):
   def get(self, request):
     now = datetime.now()
@@ -29,9 +86,10 @@ class GoalView(APIView):
       month = int(month)
     except ValueError:
       return Response({"message": "연도와 달은 정수여야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
-
+    
     user = request.user
     user_id = user.id
+    user_page = get_object_or_404(Mypage, user=user)
     # 없으면 목표가 전부 0이게 새로 생성
     if not Goal.objects.filter(user=user, year=year, month=month).exists():
       data = {
@@ -110,7 +168,8 @@ class GoalView(APIView):
           "year": year-1 if month == 1 else year,
           "month": 12 if month == 1 else month-1
         },
-      "user": user,
+      "user": user_page.nickname,
+      "user_id":user_id,
       "goal": goal,
       "record": {
         "date": date,
@@ -123,80 +182,7 @@ class GoalView(APIView):
 
     return Response(data, status=status.HTTP_200_OK)
   
-  # def post(self, request):
-    #주종, 주량, 유저
-    if not request.user.is_authenticated:
-      return Response({"message": "수정 권한이 없습니다."})
-    now = datetime.now()
-    year = now.year
-    month = now.month
-    user = request.user
-    goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
-    serializer = GoalSerializer(data=request.data)
-    if serializer.is_valid():
-      serializer.save()
-    goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
-    serializer = GoalSerializer(goal)
-    goal = serializer.data
-    user = goal['user']
-    soju_goal = Decimal(goal['soju_goal'])
-    beer_goal = Decimal(goal['beer_goal'])
-    mak_goal = Decimal(goal['mak_goal'])
-    wine_goal = Decimal(goal['wine_goal'])
-    total_goal = soju_goal + beer_goal + mak_goal + wine_goal
-    goal = {
-      "total_goal": total_goal,
-      "soju_goal": soju_goal,
-      "beer_goal": beer_goal,
-      "mak_goal": mak_goal,
-      "wine_goal": wine_goal
-    }
 
-
-    # 현재까지 마신 잔수의 합
-    date = []
-    total_soju = Decimal('0.0')
-    total_beer = Decimal('0.0')
-    total_mak = Decimal('0.0')
-    total_wine = Decimal('0.0')
-    total_record = Decimal('0.0')
-    records = Record.objects.filter(user=request.user, year=year, month=month)
-    for a in records:
-      date.append({'day': a.day, 'id': a.id})
-      total_soju += a.soju_record
-      total_beer += a.beer_record
-      total_mak += a.mak_record
-      total_wine += a.wine_record
-      total_record = total_soju + total_beer + total_mak + total_wine
-    
-    record = {
-      "total_record":total_record,
-      "total_soju":total_soju,
-      "total_beer":total_beer,
-      "total_mak":total_mak,
-      "total_wine":total_wine
-    }
-
-      # 남은 잔수의 합
-    remainder = Decimal(total_goal) - total_record
-    if total_goal == 0:
-      percentage = 0
-    else:
-      percentage = total_record/total_goal * 100
-    data ={
-      "year":year,
-      "month":month,
-      "user": user,
-    "goal": goal,
-    "record": {
-      "date": date,
-      "record_alcohol": record
-    },
-    "percentage":percentage
-      ,
-      "remainder": remainder
-    }
-    return Response(data, status=status.HTTP_200_OK)
     
 
   def patch(self, request):
@@ -206,11 +192,43 @@ class GoalView(APIView):
     year = now.year
     month = now.month
     user = request.user
+    user_page = get_object_or_404(Mypage, user=user)
+
+    request_data = request.data
+    parsed_data = json.dumps(request_data)
+    parsed_data = json.loads(parsed_data)
+    parsed_data = request_data['selections']
+
+    soju_goal = Decimal(0.0)
+    beer_goal = Decimal(0.0)
+    mak_goal  = Decimal(0.0)
+    wine_goal = Decimal(0.0)
+
+    for selection in parsed_data:
+      amount = selection['amount']
+      if selection['drink'] == '소주':
+        soju_goal = Decimal(soju[amount])
+
+      elif selection['drink'] == '맥주':
+        beer_goal = Decimal(beer[amount])
+
+      elif selection['drink'] == '막걸리':
+        mak_goal = Decimal(mak[amount])
+
+      else:
+        wine_goal = Decimal(wine[amount])
+    
+    data = {
+      "soju_goal": soju_goal,
+      "beer_goal": beer_goal,
+      "mak_goal": mak_goal,
+      "wine_goal": wine_goal
+    }
 
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
     
     if goal.user == request.user:
-      serializer = GoalPatchSerializer(goal, data=request.data)
+      serializer = GoalPatchSerializer(goal, data=data)
       if serializer.is_valid():
         serializer.save()
       
@@ -266,19 +284,8 @@ class GoalView(APIView):
       data ={
         "year":year,
         "month":month,
-        "before":{
-          "year": year if month != 1 else year-1,
-          "month": 12 if month == 1 else month-1
-        },
-      "user": user,
-      "goal": goal,
-      "record": {
-        "date": date,
-        "record_alcohol": record
-      },
-      "percentage":percentage
-      ,
-        "remainder": remainder
+        "user": user_page.nickname,
+        "goal": goal
       }
       return Response(data, status=status.HTTP_200_OK)
     else:
@@ -305,7 +312,7 @@ class SocialView(APIView):
     day   = now.day
 
     #목표
-    goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
+    goal, created = Goal.objects.get_or_create(user=request.user, year=year, month=month)
     goal_serializer = GoalSerializer(goal)
     goal_data = goal_serializer.data
     
@@ -313,6 +320,31 @@ class SocialView(APIView):
     user = request.user
     user_id = user.id
     cheer = goal_data['cheer']
+    user_page = get_object_or_404(Mypage, user=user)
+    period = 0
+    while True:
+      month  = month-1 if month != 1 else 12
+      year   = year if month != 1 else year -1
+
+      total_goal = Decimal(0.0)
+      total_record = Decimal(0.0)
+
+      try:
+        goal = Goal.objects.get(user=user, year=year, month=month)
+      except Goal.DoesNotExist:
+        break
+
+      else:
+        total_goal = goal.soju_goal+goal.beer_goal+goal.mak_goal+goal.wine_goal
+        records = Record.objects.filter(user=request.user, year=year, month=month)
+        for record in records:
+          total_record += record.soju_record+record.beer_record+record.mak_record+record.wine_record
+
+        if total_goal>=total_record:
+          period += 1
+        else:
+          break
+
     #사용자 설정 목표
     soju_goal = Decimal(goal_data['soju_goal'])
     beer_goal = Decimal(goal_data['beer_goal'])
@@ -320,6 +352,8 @@ class SocialView(APIView):
     wine_goal = Decimal(goal_data['wine_goal'])
 
     #기록
+    year  = now.year
+    month = now.month
     records = Record.objects.filter(user=request.user, year=year, month=month)
     soju_record = Decimal(0.0)
     beer_record = Decimal(0.0)
@@ -367,8 +401,11 @@ class SocialView(APIView):
     for friend in user.friends.all():
       # user의 친구 정보로 친구의 목표 정보 가져오기
       user_friend = get_object_or_404(User, pk=friend.pk)
+      friend_page = get_object_or_404(Mypage, user=user_friend)
       friend_total_goal = Decimal(0.0)
-      goal = get_object_or_404(Goal, year=year, month=month, user=user_friend)
+
+      goal, created = Goal.objects.get_or_create(user=user_friend, year=year, month=month)
+
       goal_serializer = GoalSerializer(goal)
       goal_data = goal_serializer.data
       friend_total_goal = Decimal(goal_data['soju_goal']) + Decimal(goal_data['beer_goal']) + Decimal(goal_data['mak_goal']) + Decimal(goal_data['wine_goal'])
@@ -382,7 +419,7 @@ class SocialView(APIView):
       
       percentage = friend_total_record/friend_total_goal if friend_total_goal!=0 else 0
       
-      friends_list.append({"friend":user_friend.id, "goal": friend_total_goal, "record": friend_total_record, "percentage": percentage})
+      friends_list.append({"friend_id":user_friend.id, "friend":friend_page.nickname, "goal": friend_total_goal, "record": friend_total_record, "percentage": percentage})
       # 각 친구의 목표 정보 밑 친구의 정보 {}에 저장하기
       # {"username": "유저 이름", "achievement":~~}
     # 반복문 돌면서 친구의 달성률 계산
@@ -390,6 +427,8 @@ class SocialView(APIView):
 
 
     data = {
+      "user"    : user_page.nickname,
+      "period"  : period,
       "cheer"   : cheer,
       "soju"    : soju,
       "beer"    : beer,
@@ -399,6 +438,45 @@ class SocialView(APIView):
     }
     return Response(data, status=status.HTTP_200_OK)
   
+
+class FriendView(APIView):
+  def get(self, request, friend_id):
+    now   = datetime.now()
+    year  = now.year
+    month = now.month
+    day   = now.day
+
+    friend         = get_object_or_404(User, pk=friend_id)
+    friend_page    = get_object_or_404(Mypage, user=friend)
+    friend_goal    = get_object_or_404(Goal, user=friend, year=year, month=month)
+    friend_records = Record.objects.filter(user=friend, year=year, month=month)
+    
+    soju_record = Decimal(0.0)
+    beer_record = Decimal(0.0)
+    mak_record  = Decimal(0.0)
+    wine_record = Decimal(0.0)
+
+    for record in friend_records:
+      soju_record += record.soju_record
+      beer_record += record.beer_record
+      mak_record  += record.mak_record
+      wine_record += record.wine_record
+
+    data = {
+      "friend_id"   : friend.id,
+      "friend_name" : friend_page.nickname,
+      "soju_goal"   : friend_goal.soju_goal,
+      "beer_goal"   : friend_goal.beer_goal,
+      "mak_goal"    : friend_goal.mak_goal,
+      "wine_goal"   : friend_goal.wine_goal,
+      "soju_record" : soju_record,
+      "beer_record" : beer_record,
+      "mak_record"  : mak_record,
+      "wine_record" : wine_record
+      
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
 class CheerView(APIView):
   def post(self, request, friend_id):
     # request에서 입력받은 친구 정보로 해당 목표 모델 가져오기
@@ -407,7 +485,7 @@ class CheerView(APIView):
     friend = get_object_or_404(User, pk=friend_id)
     friend_page = get_object_or_404(Mypage, user=friend)
 
-    if friend_id not in user_page.friends:
+    if friend_page not in user_page.friends.all():
       return Response({"message":"내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     now = datetime.now()
@@ -430,5 +508,5 @@ class CheerView(APIView):
 
     send_user_notification(user=friend, payload=payload)
 
-    return Response({"message": "응원을 보냈습니다."}, status=status.HTTP_200_OK)
+    return Response({"message": "응원을 보냈습니다.", "friend": friend_page.nickname}, status=status.HTTP_200_OK)
   

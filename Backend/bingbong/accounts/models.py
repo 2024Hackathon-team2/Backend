@@ -16,3 +16,12 @@ def create_user_profile(sender, instance, created, **kwargs):
         Mypage.objects.create(user=instance)
 
 # Create your models here.
+
+class Timer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, unique=True)
+    time_left = models.IntegerField(default=7200)
+    is_running = models.BooleanField(default=False)
+    start_time = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user}'s Timer"

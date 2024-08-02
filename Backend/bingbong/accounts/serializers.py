@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueValidator
-from .models import Mypage
+from .models import Mypage, Timer
 
 
 User = get_user_model()
@@ -81,3 +81,9 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class TimerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timer
+        fields = ['time_left', 'is_running', 'start_time']

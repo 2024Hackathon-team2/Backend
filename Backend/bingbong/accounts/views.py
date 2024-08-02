@@ -1,13 +1,17 @@
 from django.contrib.auth.models import User
+from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import SignupSerializer, LoginSerializer, MypageSerializer, ChangePasswordSerializer
-from .models import Mypage
+from .serializers import SignupSerializer, LoginSerializer, MypageSerializer, ChangePasswordSerializer, TimerSerializer
+from .models import Mypage, Timer
 from .permissions import CustomReadOnly
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -33,11 +37,27 @@ class LoginView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        return Response({
-            "detail": "로그인 성공",
-            "refresh": data['refresh'],
-            "access": data['access']
-        }, status=status.HTTP_200_OK)
+        
+        user = get_user_model().objects.get(email=request.data['email'])
+        
+        try:
+            timer = get_object_or_404(Timer, user=user)
+            return Response({
+                "detail": "로그인 성공",
+                "refresh": data['refresh'],
+                "access": data['access'],
+                "timeLeft": timer.time_left,
+                "isRunning": timer.is_running,
+                "startTime": timer.start_time
+
+            }, status=status.HTTP_200_OK)
+        except Http404:
+            Response({
+                "detail": "로그인 성공",
+                "refresh": data['refresh'],
+                "access": data['access']
+
+            }, status=status.HTTP_200_OK)
     
 class DeleteView(APIView):
     permission_classes = [IsAuthenticated]
@@ -112,7 +132,7 @@ class DeleteFriendView(APIView):
         if friend_page in user_page.friends.all():
             user_page.friends.remove(friend_page)
             friend_page.friends.remove(user_page)
-            return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
+            return Response({"message": "삭제되었습니다.", "friend": friend_page.nickname, "friend_email": friend.email}, status=status.HTTP_200_OK)
         return Response({"message": "내 친구가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 class FriendsView(APIView):
@@ -128,7 +148,7 @@ class FriendsView(APIView):
 
             friend_selializer = MypageSerializer(user_friend_page)
             friend_data = friend_selializer.data
-            friends_list.append({"friend_pk": friend.pk, "nickname":friend_data['nickname'], "email":user_friend.email})
+            friends_list.append({"friend_pk": friend.pk, "image": friend_data['image'], "nickname":friend_data['nickname'], "email":user_friend.email})
         return Response({"friends_list": friends_list}, status=status.HTTP_200_OK)
 
 
@@ -141,3 +161,31 @@ class ChangePasswordView(APIView):
             serializer.save()
             return Response({"detail": "비밀번호가 변경되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TimerViewSet(viewsets.ModelViewSet):
+    serializer_class = TimerSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Timer.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def save_timer(self, request):
+        timer, created = Timer.objects.get_or_create(user=request.user)
+        timer.time_left = request.data.get('timeLeft')
+        timer.is_running = request.data.get('isRunning')
+        timer.start_time = request.data.get('startTime')
+        timer.save()
+        return Response({'status': 'timer saved'})
+
+    @action(detail=False, methods=['get'])
+    def timer_state(self, request):
+        timer, created = Timer.objects.get_or_create(user=request.user)
+        if not created:
+            elapsed_time = (timezone.now() - timer.start_time).total_seconds()
+            if timer.is_running and elapsed_time >= timer.time_left:
+                timer.time_left = 0
+                timer.is_running = False
+                timer.save()
+        serializer = self.get_serializer(timer)
+        return Response(serializer.data)
