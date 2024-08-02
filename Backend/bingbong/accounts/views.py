@@ -1,13 +1,15 @@
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import SignupSerializer, LoginSerializer, MypageSerializer, ChangePasswordSerializer
-from .models import Mypage
+from .serializers import SignupSerializer, LoginSerializer, MypageSerializer, ChangePasswordSerializer, TimerSerializer
+from .models import Mypage, Timer
 from .permissions import CustomReadOnly
+from django.utils import timezone
 
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -141,3 +143,10 @@ class ChangePasswordView(APIView):
             serializer.save()
             return Response({"detail": "비밀번호가 변경되었습니다."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class TimerView(APIView):
+#     permission_classes=[IsAuthenticated]
+
+#     def post(self, request):
+        

@@ -15,6 +15,63 @@ import json
 # from permissions import CustomReadOnly # modelviewset으로 바꿀지 고민 중...
 # https://newbiecs.tistory.com/316 참고해서 공부하고 코드 변경해보기
 
+soju = {
+  "1잔 (50ml)": 1.0,
+  "2잔": 2.0,
+  "3잔": 3.0,
+  "4잔": 4.0,
+  "5잔": 5.0,
+  "6잔": 6.0,
+  "7잔": 7.0,
+  "1병": 7.5,
+  "1병 반": 11.25,
+  "2병": 15,
+  "2병 반": 18.75,
+  "3병": 22.5,
+  "3병 반": 26.25
+}
+
+beer = {
+  "1잔 (200ml)": 1.0,
+  "2잔": 2.0,
+  "1병": 2.5,
+  "1병 반": 3.75,
+  "2병": 5,
+  "2병 반": 6.25,
+  "3병": 7.5,
+  "3병 반": 8.75,
+  "4병": 10,
+  "4병 반": 11.25,  
+}
+
+mak = {
+  "1사발 (250ml)": 1.0,
+  "2사발": 2.0,
+  "1병": 3.0,
+  "1병 반": 4.5,
+  "2병": 6.0,
+  "2병 반": 7.5,
+  "3병": 9.0,
+  "3병 반":10.5,
+  "4병":12.0,
+  "4병 반":13.5,
+}
+
+wine = {
+  "1잔 (150ml)": 1.0,
+  "2잔": 2.0,
+  "3잔": 3.0,
+  "4잔": 4.0,
+  "1병": 5.0,
+  "1병 반": 7.5,
+  "2병": 10.,
+  "2병 반": 12.5,
+  "3병": 15.0,
+  "3병 반": 17.5,
+  "4병": 20.0,
+  "4병 반": 22.5,
+}
+
 class GoalView(APIView):
   def get(self, request):
     now = datetime.now()
@@ -137,10 +194,41 @@ class GoalView(APIView):
     user = request.user
     user_page = get_object_or_404(Mypage, user=user)
 
+    request_data = request.data
+    parsed_data = json.dumps(request_data)
+    parsed_data = json.loads(parsed_data)
+    parsed_data = request_data['selections']
+
+    soju_goal = Decimal(0.0)
+    beer_goal = Decimal(0.0)
+    mak_goal  = Decimal(0.0)
+    wine_goal = Decimal(0.0)
+
+    for selection in parsed_data:
+      amount = selection['amount']
+      if selection['drink'] == '소주':
+        soju_goal = Decimal(soju[amount])
+
+      elif selection['drink'] == '맥주':
+        beer_goal = Decimal(beer[amount])
+
+      elif selection['drink'] == '막걸리':
+        mak_goal = Decimal(mak[amount])
+
+      else:
+        wine_goal = Decimal(wine[amount])
+    
+    data = {
+      "soju_goal": soju_goal,
+      "beer_goal": beer_goal,
+      "mak_goal": mak_goal,
+      "wine_goal": wine_goal
+    }
+
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
     
     if goal.user == request.user:
-      serializer = GoalPatchSerializer(goal, data=request.data)
+      serializer = GoalPatchSerializer(goal, data=data)
       if serializer.is_valid():
         serializer.save()
       
