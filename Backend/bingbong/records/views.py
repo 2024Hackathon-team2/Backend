@@ -11,7 +11,7 @@ from .models import *
 from accounts.models import Mypage
 from .serializers import *
 from goals.models import *
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 
 soju = {
   "1잔 (50ml)": 1.0,
@@ -90,7 +90,7 @@ class RecordsView(APIView):
 
     year  = int(year)
     month = int(month)
-    day   = int (day)
+    day   = int (day) + 1
 
     try:
       record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
