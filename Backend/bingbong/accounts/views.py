@@ -52,7 +52,7 @@ class LoginView(generics.GenericAPIView):
 
             }, status=status.HTTP_200_OK)
         except Http404:
-            Response({
+            return Response({
                 "detail": "로그인 성공",
                 "refresh": data['refresh'],
                 "access": data['access']

@@ -8,9 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.generics import get_object_or_404
 from .models import *
+from accounts.models import Mypage
 from .serializers import *
 from goals.models import *
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 soju = {
   "1잔 (50ml)": 1.0,
@@ -78,10 +79,11 @@ class RecordsView(APIView):
     parsed_data = json.dumps(request_data)
     parsed_data = json.loads(parsed_data)
     date_str = parsed_data['date']
+    date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+    date_obj = date_obj.replace(tzinfo=timezone.utc)
     parsed_data = request_data['records']
 
-    date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-
+    
     year  = date_obj.year
     month = date_obj.month
     day   = date_obj.day
@@ -140,9 +142,15 @@ class RecordsView(APIView):
 
         # return Response(data, status=status.HTTP_201_CREATED)
         record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
+        user_page = get_object_or_404(Mypage, user=request.user)
         total_record = Decimal(0.0)
         total_record = Decimal(record.soju_record)+Decimal(record.beer_record)+Decimal(record.mak_record)+Decimal(record.wine_record)
         data = {
+          "user": user_page.nickname,
+          "year": record.year,
+          "month": record.month,
+          "day": record.day,
+          "dow": record.dow,
           "record_id"   : record.pk,
           "record_count": record_count + 1,
           "total_record": total_record
@@ -207,6 +215,7 @@ class RecordView(APIView):
     serializer.save()
 
     record = get_object_or_404(Record, user=request.user, pk=record_id)
+    user_page = get_object_or_404(Mypage, user=request.user)
     records = Record.objects.filter(user=request.user, year=record.year, month=record.month)
     record_count = records.count()
     total_record = Decimal(0.0)
@@ -214,6 +223,12 @@ class RecordView(APIView):
     total_record = Decimal(record.soju_record) + Decimal(record.beer_record) + Decimal(record.mak_record) + Decimal(record.wine_record)
 
     data = {
+      "user": user_page.nickname,
+      "year": record.year,
+      "month": record.month,
+      "day": record.day,
+      "dow": record.dow,
+      "record_id": record.id,
       "record_count": record_count,
       "total_record": total_record
     }

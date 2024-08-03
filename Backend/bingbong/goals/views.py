@@ -228,7 +228,7 @@ class GoalView(APIView):
     goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
     
     if goal.user == request.user:
-      serializer = GoalPatchSerializer(goal, data=data)
+      serializer = GoalPatchSerializer(goal, data=data)#request.data)
       if serializer.is_valid():
         serializer.save()
       
