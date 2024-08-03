@@ -128,6 +128,7 @@ class RecordsView(APIView):
         "month": month,
         "day": day,
         "dow": days[weekday],
+        #"total_record": soju_record+beer_record+mak_record+wine_record,
         "soju_record": soju_record,
         "beer_record": beer_record,
         "mak_record": mak_record,
@@ -166,7 +167,24 @@ class RecordView(APIView):
   def get(self, request, record_id):
     record = get_object_or_404(Record, pk=record_id)
     serializer = RecordSerializer(record, many=False)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    user_page = get_object_or_404(Mypage, user=request.user)
+    total_record = Decimal(0.0)
+    total_record = Decimal(record.soju_record)+Decimal(record.beer_record)+Decimal(record.mak_record)+Decimal(record.wine_record)
+    data = {
+        "user": user_page.nickname,
+        "year": record.year,
+        "month": record.month,
+        "day": record.day,
+        "dow": record.dow,
+        "record_id"   : record.pk,
+        "total_record": total_record,
+        "soju_record": record.soju_record,
+        "beer_record": record.beer_record,
+        "mak_record": record.mak_record,
+        "wine_record": record.wine_record
+    }
+
+    return Response(data, status=status.HTTP_201_CREATED)
   
   def patch(self, request, record_id):
     if not request.user.is_authenticated:
