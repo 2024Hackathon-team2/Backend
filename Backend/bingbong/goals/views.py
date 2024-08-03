@@ -205,18 +205,17 @@ class GoalView(APIView):
     wine_goal = Decimal(0.0)
 
     for selection in parsed_data:
-      amount = selection['amount']
-      if selection['drink'] == '소주':
-        soju_goal = Decimal(soju[amount])
+        amount = selection['amount']
+        drink_type = selection['drink']
 
-      elif selection['drink'] == '맥주':
-        beer_goal = Decimal(beer[amount])
-
-      elif selection['drink'] == '막걸리':
-        mak_goal = Decimal(mak[amount])
-
-      else:
-        wine_goal = Decimal(wine[amount])
+        if drink_type == '소주':
+            soju_goal += Decimal(soju.get(amount, 0.0))
+        elif drink_type == '맥주':
+            beer_goal += Decimal(beer.get(amount, 0.0))
+        elif drink_type == '막걸리':
+            mak_goal += Decimal(mak.get(amount, 0.0))
+        elif drink_type == '와인':
+            wine_goal += Decimal(wine.get(amount, 0.0))
     
     data = {
       "soju_goal": soju_goal,
