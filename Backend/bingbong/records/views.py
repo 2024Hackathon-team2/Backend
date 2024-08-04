@@ -160,12 +160,12 @@ class RecordsView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
       else:
         return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
-
-    
-
-class RecordView(APIView):
-  def get(self, request, record_id):
-    record = get_object_or_404(Record, pk=record_id)
+      
+  def get(self, request):
+    year = int(request.GET['year'])
+    month = int(request.GET['month'])
+    day = int(request.GET['day'])
+    record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
     serializer = RecordSerializer(record, many=False)
     user_page = get_object_or_404(Mypage, user=request.user)
     total_record = Decimal(0.0)
@@ -185,6 +185,25 @@ class RecordView(APIView):
     }
 
     return Response(data, status=status.HTTP_201_CREATED)
+
+  def delete(self, request):
+    if not request.user.is_authenticated:
+      return Response({"message": "권한이 없습니다."})
+
+    year = int(request.GET['year'])
+    month = int(request.GET['month'])
+    day = int(request.GET['day'])
+
+    record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
+    if request.user == record.user:
+      record.delete()
+      return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
+    else:
+      return Response({"message": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+
+
+class RecordView(APIView):
+  
   
   def patch(self, request, record_id):
     if not request.user.is_authenticated:
@@ -254,13 +273,4 @@ class RecordView(APIView):
     return Response(data, status=status.HTTP_200_OK)
 
   
-  def delete(self, request, record_id):
-    if not request.user.is_authenticated:
-      return Response({"message": "권한이 없습니다."})
-
-    record = get_object_or_404(Record, pk=record_id)
-    if request.user == record.user:
-      record.delete()
-      return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
-    else:
-      return Response({"message": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
+  

@@ -20,10 +20,10 @@ class Record(models.Model):
   month = models.IntegerField()
   day   = models.IntegerField()
   dow   = models.CharField(max_length=50)
-  soju_record = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  beer_record = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  mak_record  = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  wine_record = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
+  soju_record = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  beer_record = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  mak_record  = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  wine_record = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
 
   def __str__(self):
     return str(self.user) +" "+str(self.year)+"년 "+str(self.month)+"월 "+str(self.day)+"일 기록"

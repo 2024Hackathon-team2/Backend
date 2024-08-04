@@ -205,17 +205,19 @@ class GoalView(APIView):
     wine_goal = Decimal(0.0)
 
     for selection in parsed_data:
-        amount = selection['amount']
-        drink_type = selection['drink']
+      amount = selection['amount']
+      drink_type = selection['drink']
 
-        if drink_type == '소주':
-            soju_goal += Decimal(soju.get(amount, 0.0))
-        elif drink_type == '맥주':
-            beer_goal += Decimal(beer.get(amount, 0.0))
-        elif drink_type == '막걸리':
-            mak_goal += Decimal(mak.get(amount, 0.0))
-        elif drink_type == '와인':
-            wine_goal += Decimal(wine.get(amount, 0.0))
+      if drink_type == '소주':
+        soju_goal += Decimal(soju.get(amount, 0.0))
+      elif drink_type == '맥주':
+        beer_goal += Decimal(beer.get(amount, 0.0))
+      elif drink_type == '막걸리':
+        mak_goal += Decimal(mak.get(amount, 0.0))
+      elif drink_type == '와인':
+        wine_goal += Decimal(wine.get(amount, 0.0))
+      else:
+        continue
     
     data = {
       "soju_goal": soju_goal,
@@ -230,6 +232,7 @@ class GoalView(APIView):
       serializer = GoalPatchSerializer(goal, data=data)#request.data)
       if serializer.is_valid():
         serializer.save()
+      else: return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
       
       goal = get_object_or_404(Goal, user=request.user, year=year, month=month)
       serializer = GoalSerializer(goal)

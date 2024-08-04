@@ -8,10 +8,10 @@ class Goal(models.Model):
   ) # accounts 완성 시, user 모델로 변경 예정
   year = models.IntegerField()
   month = models.IntegerField()
-  soju_goal = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  beer_goal = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  mak_goal = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
-  wine_goal = models.DecimalField(max_digits=4, decimal_places=1, default=0.0)
+  soju_goal = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  beer_goal = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  mak_goal = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
+  wine_goal = models.DecimalField(max_digits=10, decimal_places=3, default=0.0)
   cheer = models.IntegerField(default=0)
   
   def __str__(self):
