@@ -79,18 +79,24 @@ class RecordsView(APIView):
     parsed_data = json.dumps(request_data)
     parsed_data = json.loads(parsed_data)
     date_str = parsed_data['date']
-    date_obj = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
-    date_obj = date_obj.replace(tzinfo=timezone.utc)
+    date_time = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+    nine_hours = timedelta(hours=9)
+    new_date = date_time + nine_hours
+    
+    #new_date = date.isoformat()
+
+    # date_obj = datetime.strptime(new_date, '%Y-%m-%dT%H:%M:%S.%fZ')
+    # date_obj = date_obj.replace(tzinfo=timezone.utc)
     parsed_data = request_data['records']
 
     
-    year  = date_obj.year
-    month = date_obj.month
-    day   = date_obj.day
+    year  = new_date.year
+    month = new_date.month
+    day   = new_date.day
 
     year  = int(year)
     month = int(month)
-    day   = int (day) + 1
+    day   = int (day)
 
     try:
       record = get_object_or_404(Record, user=request.user, year=year, month=month, day=day)
